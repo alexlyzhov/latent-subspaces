@@ -31,13 +31,12 @@ class Conv_block(nn.Module):
         self.batch_norm = nn.BatchNorm2d(num_features)
         
     def forward(self, x):
-        
         x = self.conv(x)
         x = self.activation(x)
         if not self.transpose:
             x = self.dropout(x)
         x = self.batch_norm(x)
-        
+
         return x
 
 class VAE1(nn.Module):
@@ -52,14 +51,14 @@ class VAE1(nn.Module):
         self.encoder.add_module("block04", Conv_block(KOF*8, KOF*4, KOF*8, 4, 2, 1, p=p))
         self.encoder.add_module("block05", Conv_block(KOF*16, KOF*8, KOF*16, 4, 2, 1, p=p))
         self.encoder.add_module("block06", Conv_block(KOF*16, KOF*16, KOF*16, 4, 2, 1, p=p))
-        self.encoder.add_module("block07", Conv_block(KOF*32, KOF*16, KOF*32, 4, 2, 1, p=p))
-        self.encoder.add_module("block08", Conv_block(KOF*32, KOF*32, KOF*32, 4, 2, 1, p=p))
+#         self.encoder.add_module("block07", Conv_block(KOF*32, KOF*16, KOF*32, 4, 2, 1, p=p))
+#         self.encoder.add_module("block08", Conv_block(KOF*32, KOF*32, KOF*32, 4, 2, 1, p=p))
 
         self.encoder.add_module("flatten", Flatten()) 
         
-        self.fc1 = nn.Sequential(nn.Linear(KOF*8*2*2, 1000), nn.BatchNorm1d(1000), nn.LeakyReLU(0.2),nn.Dropout(p=p), nn.Linear(1000, hid_dim))
+        self.fc1 = nn.Sequential(nn.Linear(KOF*8*2, 256), nn.BatchNorm1d(256), nn.LeakyReLU(0.2),nn.Dropout(p=p), nn.Linear(256, hid_dim))
         
-        self.fc2 = nn.Sequential(nn.Linear(KOF*8*2*2, 1000), nn.LeakyReLU(0.2),nn.Dropout(p=p), nn.Linear(1000, hid_dim))
+        self.fc2 = nn.Sequential(nn.Linear(KOF*8*2, 256), nn.LeakyReLU(0.2),nn.Dropout(p=p), nn.Linear(256, hid_dim))
         
 
         
@@ -67,15 +66,15 @@ class VAE1(nn.Module):
         self.decoder.add_module("block00", nn.Sequential(nn.Linear(hid_dim, hid_dim), nn.BatchNorm1d(hid_dim), nn.LeakyReLU(0.2)))
         self.decoder.add_module("reshape", Reshape((-1, hid_dim,1,1)))
         
-        self.decoder.add_module("block01", Conv_block(KOF*16, hid_dim, KOF*16, 4, 1, 0, p=p, transpose=True))
-        self.decoder.add_module("block02", Conv_block(KOF*8, KOF*16, KOF*8, 4, 2, 1, p=p, transpose=True))
-        self.decoder.add_module("block03", Conv_block(KOF*8, KOF*8, KOF*8, 3, 1, 1, p=p, transpose=True))
-        self.decoder.add_module("block04", Conv_block(KOF*4, KOF*8, KOF*4, 4, 2, 1, p=p, transpose=True))
-        self.decoder.add_module("block05", Conv_block(KOF*4, KOF*4, KOF*4, 4, 2, 1, p=p, transpose=True))
-        self.decoder.add_module("block06", Conv_block(KOF*2, KOF*4, KOF*2, 4, 2, 1, p=p, transpose=True))
-        self.decoder.add_module("block07", Conv_block(KOF, KOF*2, KOF, 4, 2, 1, p=p, transpose=True))
-        self.decoder.add_module("block08", Conv_block(KOF, KOF, KOF, 4, 2, 1, p=p, transpose=True))
-        self.decoder.add_module("block09", nn.Sequential(
+        self.decoder.add_module("block01", Conv_block(KOF*4, hid_dim, KOF*4, 4, 1, 0, p=p, transpose=True))
+        self.decoder.add_module("block02", Conv_block(KOF*4, KOF*4, KOF*4, 4, 2, 1, p=p, transpose=True))
+        self.decoder.add_module("block03", Conv_block(KOF*2, KOF*4, KOF*2, 3, 1, 1, p=p, transpose=True))
+        self.decoder.add_module("block04", Conv_block(KOF*2, KOF*2, KOF*2, 4, 2, 1, p=p, transpose=True))
+#         self.decoder.add_module("block05", Conv_block(KOF*4, KOF*4, KOF*4, 4, 2, 1, p=p, transpose=True))
+#         self.decoder.add_module("block06", Conv_block(KOF*2, KOF*4, KOF*2, 4, 2, 1, p=p, transpose=True))
+        self.decoder.add_module("block05", Conv_block(KOF, KOF*2, KOF, 4, 2, 1, p=p, transpose=True))
+        self.decoder.add_module("block06", Conv_block(KOF, KOF, KOF, 4, 2, 1, p=p, transpose=True))
+        self.decoder.add_module("block07", nn.Sequential(
                     nn.ConvTranspose2d(KOF, 3, 3, 1, 1)))
 
         self.init_params()
@@ -155,12 +154,12 @@ class VAE1(nn.Module):
         :param x:   (MB, inp_dim)
         :param beta: Float
         :param average: Compute average over mini batch or not, bool
-        :return: -RE + beta * KL  (MB, ) or (1, )
+        :return: RE + beta * KL  (MB, ) or (1, )
         """
         mu_x, logvar_x, z_hat, mu_z, logvar_z = self.forward(x)
 
         KL = self.kl(z_hat, mu_z, logvar_z)
-        print(mu_x.shape, z_hat.shape, x.shape)
+
         RE = ((torch.sigmoid(mu_x) - x)**2).mean(dim=(1,2,3))
         
         ELBO = beta * KL + RE
