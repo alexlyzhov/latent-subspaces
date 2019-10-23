@@ -30,7 +30,7 @@ w_dim = 2
 batch_size = 32
 beta = 1
 
-model = VAE(input_dim, z_dim, w_dim, beta).cuda()
+model = VAE(input_dim, z_dim, w_dim, beta)
 model = model.train().cuda()
 
 train_set_tensor = torch.from_numpy(xyz)
@@ -41,15 +41,13 @@ xyz_test, manifold_x_test = make_swiss_roll(n_samples=10000)
 xyz_test = xyz_test.astype(np.float32)
 test_set_tensor = torch.from_numpy(xyz_test).cuda()
 
-n_epochs = 30
-opt = optim.Adam(model.parameters())
-
-# opt = optim.Adam(model.parameters(), lr=1e-3/2)
-# scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[pow(3, i) for i in range(7)], gamma=pow(0.1, 1/7))
-# n_epochs = 2300
+opt = optim.Adam(model.parameters(), lr=1e-3/2)
+scheduler = optim.lr_scheduler.MultiStepLR(opt, milestones=[pow(3, i) for i in range(7)], gamma=pow(0.1, 1/7))
+n_epochs = 2300
 
 root_dir = 'res'
-exp_name = 'vae_roll_30_epochs'
+# exp_name = 'vae_roll_30_epochs'
+exp_name = 'vae_roll_with_csvae_schedule'
 png_dir = os.path.join(root_dir, exp_name, 'latent_vis')
 models_dir = os.path.join(root_dir, exp_name, 'models')
 os.makedirs(png_dir, exist_ok=True)
@@ -67,10 +65,10 @@ for epoch_i in trange(n_epochs):
         opt.step()
         mse_losses.append(mse_loss_val.item())
         kl_losses.append((kl_loss_val*beta).item())
-#     scheduler.step()
+    scheduler.step()
     print(f'Epoch {epoch_i}')
-    print(f'Mean MSE: {np.array(mse_losses[-len(train_loader):]).mean()}')
-    print(f'Mean KL: {np.array(kl_losses[-len(train_loader):]).mean()}')
+    print(f'Mean MSE: {np.array(mse_losses[-len(train_loader):]).mean():.4f}')
+    print(f'Mean KL: {np.array(kl_losses[-len(train_loader):]).mean():.4f}')
     print()
     
     mu_x, logvar_x, z_hat, mu_z, logvar_z = model.forward(test_set_tensor)
@@ -105,6 +103,8 @@ for epoch_i in trange(n_epochs):
     plt.title(cur_title)
     plt.scatter(w_comp[:, 1], w_comp[:, 0], c=colors_test)
     plt.savefig(os.path.join(png_dir, cur_title))
+    
+    plt.close('all')
     
     torch.save(model, os.path.join(models_dir, 'vae.pt'))  # may slow down training if arch is large!
     
