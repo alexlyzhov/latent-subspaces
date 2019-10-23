@@ -167,12 +167,15 @@ def tensor_to_attributes(tensor):
 def elbo_loss(recon_image, image, recon_attrs, attrs, mu, logvar,
               lambda_image=1.0, lambda_attrs=1.0, annealing_factor=1):
     
-    image_bce, attrs_bce = 0, 0  # default params
+    image_mse, attrs_bce = 0, 0  # default params
     
+#     if recon_image is not None and image is not None:
+#         image_bce = torch.sum(binary_cross_entropy_with_logits(
+#             recon_image.view(-1, 3 * 64 * 64), 
+#             image.view(-1, 3 * 64 * 64)), dim=1)
+
     if recon_image is not None and image is not None:
-        image_bce = torch.sum(binary_cross_entropy_with_logits(
-            recon_image.view(-1, 3 * 64 * 64), 
-            image.view(-1, 3 * 64 * 64)), dim=1)
+        image_mse = ((torch.sigmoid(recon_image) - image)**2).mean(dim=(1,2,3))
 
     if recon_attrs is not None and attrs is not None:
         for i in range(N_ATTRS):
@@ -183,7 +186,7 @@ def elbo_loss(recon_image, image, recon_attrs, attrs, mu, logvar,
     # Kingma and Welling. Auto-Encoding Variational Bayes. ICLR, 2014
     # https://arxiv.org/abs/1312.6114
     KLD = -0.5 * torch.sum(1 + logvar - mu.pow(2) - logvar.exp(), dim=1)
-    ELBO = torch.mean(lambda_image * image_bce + lambda_attrs * attrs_bce 
+    ELBO = torch.mean(lambda_image * image_mse + lambda_attrs * attrs_bce 
                       + annealing_factor * KLD)
 #     print(image_bce, attrs_bce, KLD)
     return ELBO
