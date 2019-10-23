@@ -70,9 +70,18 @@ elif args.model == 'CSVAE':
 
     model = CSVAE(input_dim=x_train.shape[1], labels_dim=y_train.shape[1], z_dim=z_dim, w_dim=w_dim).train().cuda()
     
-opt = optim.Adam(model.parameters(), lr=1e-3/2)
-scheduler = optim.lr_scheduler.MultiStepLR(opt, milestones=[pow(3, i) for i in range(7)], gamma=pow(0.1, 1/7))
 n_epochs = 2300
+if args.model != 'CSVAE':
+    opt = optim.Adam(model.parameters(), lr=1e-3/2)
+    scheduler = optim.lr_scheduler.MultiStepLR(opt, milestones=[pow(3, i) for i in range(7)], gamma=pow(0.1, 1/7))
+else:
+    params_without_delta = [param for name, param in model.named_parameters() if 'decoder_z_to_y' not in name]
+    params_delta = [param for name, param in model.named_parameters() if 'decoder_z_to_y' in name]
+
+    opt_without_delta = optim.Adam(params_without_delta, lr=(1e-3)/2)
+    scheduler_without_delta = optim.lr_scheduler.MultiStepLR(opt_without_delta, milestones=[pow(3, i) for i in range(7)], gamma=pow(0.1, 1/7))
+    opt_delta = optim.Adam(params_delta, lr=(1e-3)/2)
+    scheduler_delta = optim.lr_scheduler.MultiStepLR(opt_delta, milestones=[pow(3, i) for i in range(7)], gamma=pow(0.1, 1/7))
 
 root_dir = 'res'
 vis_dir = os.path.join(root_dir, args.tag, 'latent_vis')
@@ -88,8 +97,8 @@ y_negentropy_losses = []
 y_recon_losses = []
 for epoch_i in trange(n_epochs):
     for cur_batch in train_loader:
-        opt.zero_grad()
         if args.model == 'VAE':
+            opt.zero_grad()
             cur_batch = cur_batch[0]
             opt.zero_grad()
             x_recon_loss_val, kl_loss_val, _ = model.calculate_loss(cur_batch)
@@ -99,6 +108,7 @@ for epoch_i in trange(n_epochs):
             x_recon_losses.append(x_recon_loss_val.item())
             z_kl_losses.append((kl_loss_val*beta).item())
         elif args.model == 'CSVAE_without_delta_net':
+            opt.zero_grad()
             loss_val, x_recon_loss_val, z_kl_loss_val, w_kl_loss_val = model.calculate_loss(*cur_batch)
             loss_val.backward()
             opt.step()
@@ -107,14 +117,27 @@ for epoch_i in trange(n_epochs):
             w_kl_losses.append(w_kl_loss_val.item())
         elif args.model == 'CSVAE':
             loss_val, x_recon_loss_val, w_kl_loss_val, z_kl_loss_val, y_negentropy_loss_val, y_recon_loss_val = model.calculate_loss(*cur_batch)
+            
+            # optimization could be done more precisely but less efficiently by only updating delta or other params on a batch
+        
+            opt_delta.zero_grad()
+            y_recon_loss_val.backward(retain_graph=True)
+            opt_delta.step()
+
+            opt_without_delta.zero_grad()
             loss_val.backward()
-            opt.step()
+            opt_without_delta.step()
+        
             x_recon_losses.append(x_recon_loss_val.item())
             w_kl_losses.append(w_kl_loss_val.item())
             z_kl_losses.append(z_kl_loss_val.item())
             y_negentropy_losses.append(y_negentropy_loss_val.item())
             y_recon_losses.append(y_recon_loss_val.item())
-    scheduler.step()
+    if args.model != 'CSVAE':
+        scheduler.step()
+    else:
+        scheduler_without_delta.step()
+        scheduler_delta.step()
     print(f'Epoch {epoch_i}')
     print('Train')
     print(f'MSE(x): {np.array(x_recon_losses[-len(train_loader):]).mean():.4f}')
