@@ -443,6 +443,7 @@ class CSVAE(nn.Module):
         # alternatively use predicted logvar too to evaluate density of input
         
         # ELBO does not include y_recon because it should be optimized separately
+#         ELBO = 40 * x_recon + 0.2 * z_kl + 1 * w_kl + 110 * y_pred_negentropy
         ELBO = 20 * x_recon + 0.2 * z_kl + 1 * w_kl + 10 * y_pred_negentropy
         
         return ELBO, x_recon, w_kl, z_kl, y_pred_negentropy, y_recon
