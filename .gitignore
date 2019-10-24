@@ -2,4 +2,10 @@ res/
 __pycache__/
 .ipynb_checkpoints/
 Tmp*
-
+<<<<<<< HEAD
+*.zip
+*.txt
+*.npy
+img_align_celeba/
+*.tar
+weights/
