@@ -2,4 +2,6 @@ res/
 __pycache__/
 .ipynb_checkpoints/
 Tmp*
+*.tar
+weights/
 
