@@ -52,7 +52,7 @@ def init_dirs():
     ditails can be listed) and plots with results of model performance.
     """
 
-    message = "Ditails: \ncoeffs for loss: lambda_image=1., lambda_attrs=0.01, annealing_factor=0.001 \nlr=1e-4"
+    message = "Ditails: \ncoeffs for loss: lambda_image=1., lambda_attrs=0.1, annealing_factor=0.00005 \nlr=1e-4 \nloss = joint_loss + image_loss*10 + attrs_loss"
     
     username = "Liza" 
     modelname = "CondVAE"
@@ -77,25 +77,25 @@ def get_lr(optimizer):
     for param_group in optimizer.param_groups:
         return param_group['lr']
 
-def save_plot(model, X_batch):
+def save_plot(model, image, attrs):
     r"""Plots and saves the results of model performance.
     """
 
     model.eval()
-    recon_image_1, recon_attrs_1, mu_1, logvar_1 = model(image, attrs)
-    recon_image_2, recon_attrs_2, mu_2, logvar_2 = model(image)
-    recon_image_3, recon_attrs_3, mu_3, logvar_3 = model(attrs=attrs)
+    recon_image_1, recon_attrs_1, mu_1, logvar_1 = model(image, attrs, device=device)
+    recon_image_2, recon_attrs_2, mu_2, logvar_2 = model(image, device=device)
+    recon_image_3, recon_attrs_3, mu_3, logvar_3 = model(attrs=attrs, device=device)
         
     fig, ax = plt.subplots(1, 4, figsize=(20, 5))
 
-    ax[0].imshow(X_batch[0].cpu().numpy().transpose(1, 2, 0))
+    ax[0].imshow(image[0].cpu().numpy().transpose(1, 2, 0))
     ax[0].set_title("Real", fontsize=14)
     
-    ax[1].imshow(torch.sigmoid(recon_image_1[0]).detach().numpy().transpose(1, 2, 0))
+    ax[1].imshow(torch.sigmoid(recon_image_1[0]).detach().cpu().numpy().transpose(1, 2, 0))
     ax[1].set_title("Rec joint", fontsize=14)
-    ax[2].imshow(torch.sigmoid(recon_image_2[0]).detach().numpy().transpose(1, 2, 0))
+    ax[2].imshow(torch.sigmoid(recon_image_2[0]).detach().cpu().numpy().transpose(1, 2, 0))
     ax[2].set_title("Rec", fontsize=14)
-    ax[3].imshow(torch.sigmoid(recon_image_3[0]).detach().numpy().transpose(1, 2, 0))
+    ax[3].imshow(torch.sigmoid(recon_image_3[0]).detach().cpu().numpy().transpose(1, 2, 0))
     ax[3].set_title("Gen", fontsize=14)
 
     img_suffix = "img.phase_{}_epoch_{}_itr_{}.png".format(phase, epoch+1, i+1)
@@ -108,7 +108,7 @@ def save_plot(model, X_batch):
         plt.savefig(img_path)
     
     
-def saving(model, ELBOs, best_losses, epoch, i, X_batch, num_saved_models, max_num_of_models_to_save=3):
+def saving(model, ELBOs, best_losses, epoch, i, image, attrs, num_saved_models, max_num_of_models_to_save=3):
     
     print("--saving best model--")
     best_losses.append(np.mean(ELBOs[epoch]))
@@ -120,7 +120,7 @@ def saving(model, ELBOs, best_losses, epoch, i, X_batch, num_saved_models, max_n
     num_saved_models += 1
 
     # Plots to save
-    save_plot(model, X_batch)
+    save_plot(model, image, attrs)
 
     # If there are more then max_num_of_models_to_save saved models, remove the worst one
     if num_saved_models > max_num_of_models_to_save:
@@ -167,7 +167,7 @@ def tensor_to_attributes(tensor):
 def elbo_loss(recon_image, image, recon_attrs, attrs, mu, logvar,
               lambda_image=1.0, lambda_attrs=1.0, annealing_factor=1):
     
-    image_mse, attrs_bce = 0, 0  # default params
+    image_mse, attrs_bce = torch.tensor(0.), torch.tensor(0.)  # default params
     
 #     if recon_image is not None and image is not None:
 #         image_bce = torch.sum(binary_cross_entropy_with_logits(
@@ -178,6 +178,7 @@ def elbo_loss(recon_image, image, recon_attrs, attrs, mu, logvar,
         image_mse = ((torch.sigmoid(recon_image) - image)**2).mean(dim=(1,2,3))
 
     if recon_attrs is not None and attrs is not None:
+        attrs_bce = 0
         for i in range(N_ATTRS):
             attr_bce = binary_cross_entropy_with_logits(
                 recon_attrs[:, i], attrs[:, i])
@@ -189,7 +190,7 @@ def elbo_loss(recon_image, image, recon_attrs, attrs, mu, logvar,
     ELBO = torch.mean(lambda_image * image_mse + lambda_attrs * attrs_bce 
                       + annealing_factor * KLD)
 #     print(image_bce, attrs_bce, KLD)
-    return ELBO
+    return KLD, image_mse, attrs_bce, ELBO
 
 
 def binary_cross_entropy_with_logits(input, target):
@@ -208,7 +209,7 @@ if __name__ == "__main__":
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu") 
 
-    ROOT = "../../img_align_celeba"
+    ROOT = "../data/img_align_celeba"
 
     class FaceData_with_Attributes(Dataset):
         def __init__(self, img_names, image_transform=None, attr_transform=None):
@@ -250,7 +251,7 @@ if __name__ == "__main__":
             return self.size
         
     # Attr  
-    df_attr = pd.read_csv("../../data/Anno/df_attr.csv")
+    df_attr = pd.read_csv("../data/df_attr.csv")
     
     # Train and val imgs
 #     df_split = pd.read_csv("../data/dataframes/train_val_test_split.csv")
@@ -273,7 +274,8 @@ if __name__ == "__main__":
     
     
     ### Model 
-    model = CondVAE(128, 32, 0.04, N_ATTRS)
+    path = "weights/VAE1_Liza_23_10_2019_00_30/weight.epoch_21_itr_159_loss_val_0.00719558244778776.pth"
+    model = CondVAE(128, 32, 0.04, N_ATTRS, path)
     optimizer = optim.Adam(model.parameters(), lr=1e-4)
 
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, gamma=0.1, step_size=100)
@@ -281,7 +283,8 @@ if __name__ == "__main__":
     ### Train
     n_epoch = 100
     model = model.to(device)
-    df = pd.DataFrame(columns=['epoch', 'phase', 'itr', 'lr', 'img', 'attr', 'joint', 'loss',  'time'])
+#     df = pd.DataFrame(columns=['epoch', 'phase', 'itr', 'lr', 'img', 'attr', 'joint', 'loss',  'time'])
+    df = pd.DataFrame(columns=['epoch', 'phase', 'itr', 'lr', 'mode', 'KL', 'RE_img', 'BCE_attr', 'loss',  'time'])
 
 
     ELBOs, JOINT_loss, IMG_loss, ATTR_loss = {}, {}, {}, {}
@@ -297,7 +300,7 @@ if __name__ == "__main__":
         IMG_loss[epoch] = []
         ATTR_loss[epoch] = []
 
-        for phase in ["train"]:
+        for phase in ["train", "val"]:
 
             if phase == "train":
                 model.train()
@@ -307,33 +310,33 @@ if __name__ == "__main__":
             start = time.time()
             for i, (image, attrs) in enumerate(dataloaders[phase]):
                 
-                image = Variable(image)
-                attrs = Variable(attrs)
+                image = Variable(image).to(device)
+                attrs = Variable(attrs).to(device)
                 batch_size = len(image)
                 
                 # pass data through model
-                recon_image_1, recon_attrs_1, mu_1, logvar_1 = model(image, attrs)
-                recon_image_2, recon_attrs_2, mu_2, logvar_2 = model(image)
-                recon_image_3, recon_attrs_3, mu_3, logvar_3 = model(attrs=attrs)
+                recon_image_1, recon_attrs_1, mu_1, logvar_1 = model(image, attrs, device=device)
+                recon_image_2, recon_attrs_2, mu_2, logvar_2 = model(image, device=device)
+                recon_image_3, recon_attrs_3, mu_3, logvar_3 = model(attrs=attrs, device=device)
                 
                 # compute ELBO for each data combo
-                joint_loss = elbo_loss(recon_image_1, image, recon_attrs_1, attrs, mu_1, logvar_1, 
-                                       lambda_image=1., lambda_attrs=0.01,
-                                       annealing_factor=0.001)
+                _, _, _, joint_loss = elbo_loss(recon_image_1, image, recon_attrs_1, attrs, mu_1, logvar_1, 
+                                       lambda_image=1., lambda_attrs=0.1,
+                                       annealing_factor=0.00005)
 
-                image_loss = elbo_loss(recon_image_2, image, None, None, mu_2, logvar_2, 
-                                       lambda_image=1., lambda_attrs=0.01,
-                                       annealing_factor=0.001)
+                _, _, _, image_loss = elbo_loss(recon_image_2, image, None, None, mu_2, logvar_2, 
+                                       lambda_image=1., lambda_attrs=0.1,
+                                       annealing_factor=0.00005)
 
-                attrs_loss = elbo_loss(None, None, recon_attrs_3, attrs, mu_3, logvar_3, 
-                                       lambda_image=1., lambda_attrs=0.01,
-                                       annealing_factor=0.001)
-
+                _, _, _, attrs_loss = elbo_loss(None, None, recon_attrs_3, attrs, mu_3, logvar_3, 
+                                       lambda_image=1., lambda_attrs=0.1,
+                                       annealing_factor=0.00005)
+                
                 JOINT_loss[epoch].append(joint_loss.item())
                 IMG_loss[epoch].append(image_loss.item())
                 ATTR_loss[epoch].append(attrs_loss.item())
                 
-                loss = joint_loss + image_loss + attrs_loss
+                loss = joint_loss + image_loss*10 + attrs_loss
                 ELBOs[epoch].append(loss.item())
 
                 if phase == "train":
@@ -347,7 +350,7 @@ if __name__ == "__main__":
 
                 ii += 1
 
-                if i % 25 == 24:
+                if i % 30 == 29:
                     time_elapsed = time.time() - start
                     start = time.time()
 
@@ -356,25 +359,53 @@ if __name__ == "__main__":
                                                                               image_loss.item(), joint_loss.item(),
                                                                               time_elapsed//60, time_elapsed % 60))
 
-                    df.loc[df.shape[0]] = [epoch+1, phase, i+1, get_lr(optimizer),
-                                           np.mean(IMG_loss[epoch]), np.mean(ATTR_loss[epoch]),
-                                           np.mean(JOINT_loss[epoch]), np.mean(ELBOs[epoch]),
+                    KLD, image_mse, attrs_bce, ELBO = elbo_loss(recon_image_1, image, recon_attrs_1, attrs, mu_1, logvar_1, 
+                                                               lambda_image=1., lambda_attrs=0.1,
+                                                                annealing_factor=0.00005)
+                    df.loc[df.shape[0]] = [epoch+1, phase, i+1, get_lr(optimizer), "joint",
+                                           torch.mean(KLD).item(), torch.mean(image_mse).item(), 
+                                           torch.mean(attrs_bce).item(), ELBO.item(),
                                            '{:.0f}m {:.0f}s'.format(time_elapsed // 60, int(time_elapsed % 60))]
+                    
+                    KLD, image_mse, attrs_bce, ELBO = elbo_loss(recon_image_2, image, None, None, mu_2, logvar_2, 
+                                                               lambda_image=1., lambda_attrs=0.1,
+                                                               annealing_factor=0.00005)
+                    df.loc[df.shape[0]] = [epoch+1, phase, i+1, get_lr(optimizer), "image",
+                                           torch.mean(KLD).item(), torch.mean(image_mse).item(), 
+                                           torch.mean(attrs_bce).item(), ELBO.item(),
+                                           '{:.0f}m {:.0f}s'.format(time_elapsed // 60, int(time_elapsed % 60))]
+                    
+                    KLD, image_mse, attrs_bce, ELBO = elbo_loss(None, None, recon_attrs_3, attrs, mu_3, logvar_3, 
+                                                               lambda_image=1., lambda_attrs=0.1,
+                                                               annealing_factor=0.00005)
+                    df.loc[df.shape[0]] = [epoch+1, phase, i+1, get_lr(optimizer), "attrs",
+                                           torch.mean(KLD).item(), torch.mean(image_mse).item(), 
+                                           torch.mean(attrs_bce).item(), ELBO.item(),
+                                           '{:.0f}m {:.0f}s'.format(time_elapsed // 60, int(time_elapsed % 60))]
+                    
+#                     df.loc[df.shape[0]] = [epoch+1, phase, i+1, get_lr(optimizer),
+#                                            np.mean(IMG_loss[epoch]), np.mean(ATTR_loss[epoch]),
+#                                            np.mean(JOINT_loss[epoch]), np.mean(ELBOs[epoch]),
+#                                            '{:.0f}m {:.0f}s'.format(time_elapsed // 60, int(time_elapsed % 60))]
                     df.to_csv(df_path, index=False)
                     
-                if i % 500 == 499:
-                    save_plot(model, X_batch)
+                if i % 100 == 99:
+                    save_plot(model, image, attrs)
                     if phase == "train":
                         model.train()
 
             # At the end of epoch:
+            save_plot(model, image, attrs)
+            if phase == "train":
+                model.train()
+                        
             if (np.mean(ELBOs[epoch])  < np.array(best_losses)).any() and phase == "val":
                 if 10000. in best_losses:
                     best_losses.remove(10000.)
 
                 # Save new best model
                 num_saved_models = saving(model, ELBOs, best_losses, 
-                                          epoch, i, X_batch, num_saved_models, 
+                                          epoch, i, image, attrs, num_saved_models, 
                                           max_num_of_models_to_save=6)
               
             # Print results 
@@ -386,11 +417,11 @@ if __name__ == "__main__":
                                                                               time_elapsed//60, time_elapsed % 60))
 
             # Save logs
-            df.loc[df.shape[0]] = [epoch+1, phase, i+1, get_lr(optimizer),
-                                           np.mean(IMG_loss[epoch]), np.mean(ATTR_loss[epoch]),
-                                           np.mean(JOINT_loss[epoch]), np.mean(ELBOs[epoch]),
-                                           '{:.0f}m {:.0f}s'.format(time_elapsed // 60, int(time_elapsed % 60))]
-            df.to_csv(df_path, index=False)
+#             df.loc[df.shape[0]] = [epoch+1, phase, i+1, get_lr(optimizer),
+#                                            np.mean(IMG_loss[epoch]), np.mean(ATTR_loss[epoch]),
+#                                            np.mean(JOINT_loss[epoch]), np.mean(ELBOs[epoch]),
+#                                            '{:.0f}m {:.0f}s'.format(time_elapsed // 60, int(time_elapsed % 60))]
+#             df.to_csv(df_path, index=False)
             
         scheduler.step()
 

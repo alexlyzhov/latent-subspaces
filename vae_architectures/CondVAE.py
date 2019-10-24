@@ -29,8 +29,8 @@ class CondVAE(nn.Module):
         
         self.hid_dim = hid_dim
     
-    def forward(self, image=None, attrs=None):
-        mu_z, logvar_z  = self.infer(image, attrs)
+    def forward(self, image=None, attrs=None, device=torch.device("cpu")):
+        mu_z, logvar_z  = self.infer(image, attrs, device=device)
 
         z_hat = self.reparameterize(mu_z, logvar_z)
 
