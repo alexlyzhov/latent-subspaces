@@ -1,0 +1,5 @@
+Training on 64x64 images. Focuse on reconstruction. 
+Pretrained=/home/edlazareva/latent-subspaces/train_vae/weights/VAE1_Liza_22_10_2019_15_11/weight.epoch_53_itr_159_loss_val_0.007058261267038853.pth 
+beta=8e-5 
+lr=2e-4  
+batch_size=128
