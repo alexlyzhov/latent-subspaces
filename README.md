@@ -1,6 +1,8 @@
 # latent-subspaces
 Implementation of ["Learning latent subspaces in variational autoencoders"](http://papers.nips.cc/paper/7880-learning-latent-subspaces-in-variational-autoencoders.pdf) (NIPS'18).
 
+[Project report](report.pdf)
+
 `csvae_toy/` contains scripts with CSVAE model definition and training procedure on toy data.
 
 `condvae_celeba/` contains scripts for training VAE and Conditional VAE on CelebA dataset, the folder `model/` with architectures of VAE and Conditional VAE, and the folder `weights/` with the best weights, training details and dataframe with training log.
