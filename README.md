@@ -1,14 +1,13 @@
 # latent-subspaces
 Implementation of ["Learning latent subspaces in variational autoencoders"](http://papers.nips.cc/paper/7880-learning-latent-subspaces-in-variational-autoencoders.pdf) (NIPS'18).
 
-`csvae_toy/` contains scripts with CSVAE model definition and training procedure on toy data (swiss roll from sklearn).
+`csvae_toy/` contains scripts with CSVAE model definition and training procedure on toy data.
 
-`condvae_celeba/` contains scripts for training VAE and Conditional VAE on CelebA dataset, the folder `model/` with architectures of VAE and Conditional VAE,  the folder `weights/` with the best weights and training ditails and trainig history dataframe.
+`condvae_celeba/` contains scripts for training VAE and Conditional VAE on CelebA dataset, the folder `model/` with architectures of VAE and Conditional VAE, and the folder `weights/` with the best weights, training details and dataframe with training log.
 
-`attr_classifier/` contains of the notebook for training and testing attributes classification model (ResNet34) and the weights for this model.
+`attr_classifier/` contains the notebook for training and testing the attribute classification model (ResNet34) and the weights for this model.
 
-`results/` contains of the notebooks with models performance results. There you can find the generation examples, computed accuracy of generation and the exmples of style transfer.
-
+`results/` contains notebooks with CelebA benchmarking results. There you can find the generation examples and metrics and examples of style transfer.
 
 
 Contributors: Artem Shafarostov, Marina Pominova, Alexander Lyzhov, Elizaveta Lazareva
