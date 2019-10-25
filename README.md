@@ -19,6 +19,10 @@ We implement Conditional subspace VAE (CSVAE) architecture, architectures of cor
 
 # CSVAE results on CelebA dataset
 <img src="https://user-images.githubusercontent.com/10714414/67606224-4d3e0080-f789-11e9-9f6e-1a7a909b1621.png" width="400" class="center">
+<img src="https://user-images.githubusercontent.com/10714414/67606469-31872a00-f78a-11e9-80fd-1758ca491531.png" width="400" class="center">
+<img src="https://user-images.githubusercontent.com/10714414/67606476-36e47480-f78a-11e9-9923-7acafcf91f2f.png" width="400" class="center">
+<img src="https://user-images.githubusercontent.com/10714414/67606491-3cda5580-f78a-11e9-99a7-b61e26b03053.png" width="400" class="center">
+<img src="https://user-images.githubusercontent.com/10714414/67606493-3ea41900-f78a-11e9-9cc0-c910c449ae1e.png" width="400" class="center">
 
 
 Contributors: Artem Shafarostov, Marina Pominova, Alexander Lyzhov, Elizaveta Lazareva
