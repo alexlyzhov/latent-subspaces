@@ -17,5 +17,8 @@ We implement Conditional subspace VAE (CSVAE) architecture, architectures of cor
 
 `results/` contains notebooks with CelebA benchmarking results. There you can find the generation examples and metrics and examples of style transfer.
 
+# CSVAE results on CelebA dataset
+<img src="https://user-images.githubusercontent.com/10714414/67606224-4d3e0080-f789-11e9-9f6e-1a7a909b1621.png" width="400" class="center">
+
 
 Contributors: Artem Shafarostov, Marina Pominova, Alexander Lyzhov, Elizaveta Lazareva
