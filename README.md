@@ -1,7 +1,9 @@
 # latent-subspaces
-Implementation of ["Learning latent subspaces in variational autoencoders"](http://papers.nips.cc/paper/7880-learning-latent-subspaces-in-variational-autoencoders.pdf) (NIPS'18).
+Implementation of ["Learning latent subspaces in variational autoencoders"](http://papers.nips.cc/paper/7880-learning-latent-subspaces-in-variational-autoencoders.pdf) (NIPS'18). [Project report is here](report.pdf).
 
-[Project report](report.pdf)
+CSVAE is an autoencoder model based on plain VAE and is an implementation of the idea of mutual information minimization between 
+
+We implement Conditional VAE (CSVAE) architecture, architectures of corresponding competing approaches (CondVAE, CondVAE-Info, VAE), and 
 
 `csvae_toy/` contains scripts with CSVAE model definition and training procedure on toy data.
 
