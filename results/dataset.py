@@ -20,10 +20,8 @@ ATTR_IX_TO_KEEP  = [4, 5, 8, 9, 11, 12, 15, 17, 18, 20, 21, 22, 26, 28, 31, 32, 
 IX_TO_ATTR_DICT  = {v:k for k, v in ATTR_TO_IX_DICT.items()}
 N_ATTRS          = len(ATTR_IX_TO_KEEP)
 
-ROOT = "../data/img_align_celeba"
-df_attr = pd.read_csv("../data/dataframes/df_attr.csv")
 
-def get_attr(img_name):
+def get_attr(img_name, df_attr):
     df_attr_img = df_attr[df_attr.img_name == img_name]
     attr = df_attr_img.values[0, 1:]
     attr   = np.array(attr).astype(int)
@@ -48,8 +46,11 @@ def tensor_to_attributes(tensor):
     return attrs
 
 class FaceData_with_Attributes(Dataset):
-    def __init__(self, img_names, image_transform=None, attr_transform=None):
+    def __init__(self, img_names, img_path, df_attr_path, image_transform=None, attr_transform=None):
 
+        self.img_path = img_path
+        self.df_attr = pd.read_csv(df_attr_path)
+        
         self.img_names = img_names
 
         self.size = int(len(img_names))
@@ -63,13 +64,13 @@ class FaceData_with_Attributes(Dataset):
     def __getitem__(self, index):
 
         # attr
-        attr = get_attr(self.img_names[index])
+        attr = get_attr(self.img_names[index], self.df_attr)
 
         if self.attr_transform is not None:
             attr = self.attr_transform(attr)
 
         # img 
-        img_path = os.path.join(ROOT, self.img_names[index])
+        img_path = os.path.join(self.img_path, self.img_names[index])
 
         img = Image.open(img_path)
         img = img.resize((256, 256), Image.ANTIALIAS)

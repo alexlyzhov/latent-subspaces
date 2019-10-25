@@ -1,4 +1,0 @@
-Ditails: 
-coeffs for loss: lambda_image=1., lambda_attrs=0.1, annealing_factor=0.00005 
-lr=1e-4 
-loss = joint_loss + image_loss*10 + attrs_loss
