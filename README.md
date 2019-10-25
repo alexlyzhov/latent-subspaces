@@ -3,9 +3,9 @@ Implementation of ["Learning latent subspaces in variational autoencoders"](http
 
 CSVAE is an autoencoder model based on plain VAE and is an implementation of the idea of mutual information minimization between a feature and a part of latent space to constraint the structure of latent mapping for richer representations.
 
-We implement Conditional subspace VAE (CSVAE) architecture, architectures of corresponding competing approaches (CondVAE, CondVAE-Info, VAE), and 
+We implement Conditional subspace VAE (CSVAE) architecture, architectures of corresponding competing approaches (CondVAE, CondVAE-Info, VAE), and do a benchmarking in a number of setups including reconstruction quality, latent space structuring capability and attribute transfer.
 
-`csvae_toy/` contains scripts with CSVAE model definition and training procedure on toy data along with visualizations for easier interpretation and quantitative results.
+`csvae_toy/` contains scripts with CSVAE model definition and training procedure on toy data along with visualizations for easier interpretation and quantitative results. `definitions.py` contains definitions for a number of models including CSVAE, `train.py` is a parametrized script for easy training, `csvae_toy.ipynb` is for playing around with representations and fast propotyting. Other notebooks are for CelebA training and evaluation.
 
 `condvae_celeba/` contains scripts for training VAE and Conditional VAE on CelebA dataset, the folder `model/` with architectures of VAE and Conditional VAE, and the folder `weights/` with the best weights, training details and dataframe with training log.
 
