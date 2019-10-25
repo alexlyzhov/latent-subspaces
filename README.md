@@ -5,7 +5,7 @@ Implementation of ["Learning latent subspaces in variational autoencoders"](http
 
 `condvae_celeba/` contains scripts for training VAE and Conditional VAE on CelebA dataset, the folder `model/` with architectures of VAE and Conditional VAE, and the folder `weights/` with the best weights, training details and dataframe with training log.
 
-`cvae_info/scripts` contains script with for training cvae_info on celebA dataset
+`cvae_info/scripts` contains script with for training cvae_info on celebA dataset. [Article](https://arxiv.org/pdf/1711.05175.pdf)
 
 `attr_classifier/` contains the notebook for training and testing the attribute classification model (ResNet34) and the weights for this model.
 
