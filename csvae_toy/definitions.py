@@ -202,15 +202,15 @@ class CSVAE_without_delta_net(nn.Module):
         
         intermediate = self.encoder_x_to_z(x)
         z_mu = self.mu_x_to_z(intermediate)
-        z_logvar = self.mu_x_to_z(intermediate)
+        z_logvar = self.logvar_x_to_z(intermediate)
         
         intermediate = self.encoder_xy_to_w(xy)
         w_mu_encoder = self.mu_xy_to_w(intermediate)
-        w_logvar_encoder = self.mu_xy_to_w(intermediate)
+        w_logvar_encoder = self.logvar_xy_to_w(intermediate)
         
         intermediate = self.encoder_y_to_w(y)
         w_mu_prior = self.mu_y_to_w(intermediate)
-        w_logvar_prior = self.mu_y_to_w(intermediate)
+        w_logvar_prior = self.logvar_y_to_w(intermediate)
         
         return w_mu_encoder, w_logvar_encoder, w_mu_prior, \
                w_logvar_prior, z_mu, z_logvar
@@ -367,15 +367,15 @@ class CSVAE(nn.Module):
         
         intermediate = self.encoder_x_to_z(x)
         z_mu = self.mu_x_to_z(intermediate)
-        z_logvar = self.mu_x_to_z(intermediate)
+        z_logvar = self.logvar_x_to_z(intermediate)
         
         intermediate = self.encoder_xy_to_w(xy)
         w_mu_encoder = self.mu_xy_to_w(intermediate)
-        w_logvar_encoder = self.mu_xy_to_w(intermediate)
+        w_logvar_encoder = self.logvar_xy_to_w(intermediate)
         
         intermediate = self.encoder_y_to_w(y)
         w_mu_prior = self.mu_y_to_w(intermediate)
-        w_logvar_prior = self.mu_y_to_w(intermediate)
+        w_logvar_prior = self.logvar_y_to_w(intermediate)
         
         return w_mu_encoder, w_logvar_encoder, w_mu_prior, \
                w_logvar_prior, z_mu, z_logvar
